@@ -127,20 +127,14 @@ class SessionUser(BaseModel):
 
 
 class SessionRequest(BaseModel):
-    botId: str
+    botId: str | None = None
     user: SessionUser | None = None
     initialMessages: list[MessageContent] = []
 
 
 class Session(BaseModel):
     id: str
-    externalId: str
-    bot: BotInfo
     userId: str
-    externalUser: ExternalUser
     messages: list[Message]
     startDate: datetime
-    lastUpdateDate: datetime
-    dialogueLength: int
-    deletedAt: datetime | None = None
-    isIdle: bool
+    
