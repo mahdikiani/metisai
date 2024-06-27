@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metisai"
+version = "0.3.0"
+description = "A Python client for Metis to streamline API interactions, enabling easy management and customization of AI-driven chatbots and image models."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = ["metis", "ai", "llm", "api", "generative ai"]
+authors = [
+  {name = "Mahdi Kiani", email = "mahdi@mahdikiani.com" }
+]
+
+maintainers = [
+  {name = "Mahdi Kiani", email = "mahdi@mahdikiani.com" }
+]
+classifiers = [
+  # How mature is this project? Common values are
+  #   3 - Alpha
+  #   4 - Beta
+  #   5 - Production/Stable
+  "Development Status :: 4 - Beta",
+
+  # Indicate who your project is intended for
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+
+  # Pick your license as you wish
+  "License :: OSI Approved :: MIT License",
+
+  # Specify the Python versions you support here. In particular, ensure
+  # that you indicate you support Python 3. These classifiers are *not*
+  # checked by "pip install". See instead "requires-python" key in this file.
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+# This field lists other packages that your project depends on to run.
+# Any package you put here will be installed by pip when your project is
+# installed, so they must be valid existing projects.
+#
+# For an analysis of this field vs pip's requirements files see:
+# https://packaging.python.org/discussions/install-requires-vs-requirements/
+dependencies = [
+  "peppercorn"
+]
+
+[project.optional-dependencies]
+dev = ["check-manifest"]
+test = ["coverage"]
+
+[project.urls]
+"Homepage" = "https://github.com/mahdikiani/metisai"
+"Bug Reports" = "https://github.com/mahdikiani/metisai/issues"
+"Funding" = "https://github.com/mahdikiani/metisai"
+"Say Thanks!" = "https://saythanks.io/to/mahdikiani"
+"Source" = "https://github.com/mahdikiani/metisai"
+
+[tool.setuptools]
+package-data = {"sample" = ["*.dat"]}
