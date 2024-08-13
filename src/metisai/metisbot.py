@@ -77,9 +77,7 @@ class MetisBot:
                 content=prompt,
             )
         )
-        response = requests.post(
-            url, headers=self.headers, json=data.model_dump()
-        )
+        response = requests.post(url, headers=self.headers, json=data.model_dump())
         response.raise_for_status()
         return Message(**response.json())
 
@@ -91,9 +89,7 @@ class MetisBot:
                 content=prompt,
             )
         )
-        response = requests.post(
-            url, headers=self.headers, json=data.model_dump()
-        )
+        response = requests.post(url, headers=self.headers, json=data.model_dump())
         response.raise_for_status()
         return Task(**response.json())
 

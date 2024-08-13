@@ -37,9 +37,7 @@ class AsyncMetisBot:
         self.bot_id = bot_id
 
     async def _request(self, method: str, endpoint: str, **kwargs):
-        url = self.endpoints.get(endpoint).format(
-            **kwargs.pop("url_params", {})
-        )
+        url = self.endpoints.get(endpoint).format(**kwargs.pop("url_params", {}))
         async with aiohttp.ClientSession() as session:
             async with session.request(
                 method, url, headers=self.headers, **kwargs
@@ -113,9 +111,7 @@ class AsyncMetisBot:
         )
         return Task(**response_data)
 
-    async def retrieve_async_task(
-        self, session: Session, task: Task
-    ) -> TaskResult:
+    async def retrieve_async_task(self, session: Session, task: Task) -> TaskResult:
         response_data = await self._request(
             method="GET",
             endpoint="get_async_task",
@@ -175,9 +171,7 @@ class AsyncMetisBot:
                                     buffer = ""
 
                 yield MessageStream(
-                    message=MessageContent(
-                        type="AI", content=buffer, attachments=None
-                    )
+                    message=MessageContent(type="AI", content=buffer, attachments=None)
                 )
 
     async def close(self):
