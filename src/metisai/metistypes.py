@@ -134,7 +134,7 @@ class SessionRequest(BaseModel):
 
 class Session(BaseModel):
     id: str
-    userId: str
+    botId: str
+    user: SessionUser
     messages: list[Message]
     startDate: datetime
-    
