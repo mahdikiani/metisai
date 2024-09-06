@@ -104,7 +104,7 @@ class Message(BaseModel):
     content: str
     attachments: list[Attachment] | None = None
     timestamp: datetime
-    finishReason: Literal["STOP"]
+    finishReason: Literal["STOP", "LENGTH", "CONTENT_FILTER"] | None
 
 
 class MessageStream(BaseModel):
