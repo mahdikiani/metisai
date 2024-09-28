@@ -11,7 +11,9 @@ class TestAsyncTapSageBot(unittest.IsolatedAsyncioTestCase):
         api_key = os.getenv("TAPSAGE_API_KEY")
         bot_id = os.getenv("TAPSAGE_BOT_ID")
         cls.metis_bot = AsyncMetisBot(api_key, bot_id)
-        cls.prompt = "Suggest me a list of 5 gifts for a 30 years boy who is technology-fan."
+        cls.prompt = (
+            "Suggest me a list of 5 gifts for a 30 years boy who is technology-fan."
+        )
 
     @staticmethod
     async def async_test(test_coro):
