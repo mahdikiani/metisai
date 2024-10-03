@@ -65,11 +65,21 @@ class MetisBot:
         return Session(**response.json())
 
     def delete_session(self, session: Session) -> None:
-        url = self.endpoints.get("get_session").format(session_id=session.id)
+        if isinstance(session, (str, uuid.UUID)):
+            session_id = session
+        else:
+            session_id = session.id
+
+        url = self.endpoints.get("get_session").format(session_id=session_id)
         response = requests.delete(url, headers=self.headers)
         response.raise_for_status()
 
     def send_message(self, session: Session, prompt: str) -> Message:
+        if isinstance(session, (str, uuid.UUID)):
+            session_id = session
+        else:
+            session_id = session.id
+
         url = self.endpoints.get("message").format(session_id=session.id)
         data = MessageRequest(
             message=MessageContent(
@@ -82,7 +92,12 @@ class MetisBot:
         return Message(**response.json())
 
     def send_message_async(self, session: Session, prompt: str) -> Task:
-        url = self.endpoints.get("async_task").format(session_id=session.id)
+        if isinstance(session, (str, uuid.UUID)):
+            session_id = session
+        else:
+            session_id = session.id
+
+        url = self.endpoints.get("async_task").format(session_id=session_id)
         data = MessageRequest(
             message=MessageContent(
                 type="USER",
@@ -94,8 +109,18 @@ class MetisBot:
         return Task(**response.json())
 
     def retrieve_async_task(self, session: Session, task: Task) -> TaskResult:
+        if isinstance(session, (str, uuid.UUID)):
+            session_id = session
+        else:
+            session_id = session.id
+
+        if isinstance(task, (str, uuid.UUID)):
+            task_id = task
+        else:
+            task_id = task.taskId
+
         url = self.endpoints.get("get_async_task").format(
-            session_id=session.id, task_id=task.taskId
+            session_id=session_id, task_id=task_id
         )
         response = requests.get(url, headers=self.headers)
         response.raise_for_status()
@@ -104,7 +129,12 @@ class MetisBot:
     def stream_messages(
         self, session: Session, prompt: str, split_criteria: dict = None
     ):
-        url = self.endpoints.get("stream").format(session_id=session.id)
+        if isinstance(session, (str, uuid.UUID)):
+            session_id = session
+        else:
+            session_id = session_id
+
+        url = self.endpoints.get("stream").format(session_id=session_id)
         data = MessageRequest(
             message=MessageContent(
                 type="USER",
