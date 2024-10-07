@@ -116,9 +116,9 @@ class Task(BaseModel):
 
 
 class TaskResult(BaseModel):
-    status: Literal["RUNNING", "FINISHED"]
+    status: Literal["RUNNING", "FINISHED", "FAILED"]
     message: Message | None = None
-    percentage: str | None = None
+    percentage: int | None = None
 
 
 class SessionUser(BaseModel):
