@@ -76,9 +76,9 @@ class MetisBot:
 
     def send_message(self, session: Session, prompt: str) -> Message:
         if isinstance(session, (str, uuid.UUID)):
-            session_id = session
+            pass
         else:
-            session_id = session.id
+            session.id
 
         url = self.endpoints.get("message").format(session_id=session.id)
         data = MessageRequest(
