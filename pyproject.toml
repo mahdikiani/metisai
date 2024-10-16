@@ -50,7 +50,9 @@ classifiers = [
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
-  "peppercorn"
+  "pydantic>=1.8.2",
+  "requests>=2.26.0",
+  "aiohttp>=3.8.2",
 ]
 
 [project.optional-dependencies]
