@@ -101,7 +101,7 @@ class MessageRequest(BaseModel):
 class Message(BaseModel):
     id: str
     type: Literal["USER", "AI"]
-    content: str
+    content: str | None = None
     attachments: list[Attachment] | None = None
     timestamp: datetime
     finishReason: Literal["STOP", "LENGTH", "CONTENT_FILTER"] | None
