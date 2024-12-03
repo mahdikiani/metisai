@@ -4,6 +4,7 @@ import uuid
 import aiohttp
 
 from ..metistypes import (
+    Attachment,
     Message,
     MessageContent,
     MessageRequest,
@@ -95,6 +96,29 @@ class AsyncMetisBot:
             message=MessageContent(
                 type="USER",
                 content=prompt,
+            )
+        )
+        response_data = await self._request(
+            method="POST",
+            endpoint="message",
+            url_params={"session_id": session_id},
+            json=data.model_dump(),
+        )
+        return Message(**response_data)
+
+    async def send_message_with_attachment(self, session: Session, prompt: str, attachment_url: str, attachment_type: str = "IMAGE") -> Message:
+        if isinstance(session, (str, uuid.UUID)):
+            session_id = session
+        else:
+            session_id = session.id
+
+        data = MessageRequest(
+            message=MessageContent(
+                type="USER",
+                content=prompt,
+                attachments=[
+                    Attachment(content=attachment_url, contentType=attachment_type)
+                ],
             )
         )
         response_data = await self._request(

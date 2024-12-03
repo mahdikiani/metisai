@@ -8,12 +8,10 @@ from metisai.async_metis import AsyncMetisBot
 class TestAsyncTapSageBot(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
-        api_key = os.getenv("TAPSAGE_API_KEY")
-        bot_id = os.getenv("TAPSAGE_BOT_ID")
+        api_key = os.getenv("METIS_API_KEY")
+        bot_id = os.getenv("METIS_BOT_ID")
         cls.metis_bot = AsyncMetisBot(api_key, bot_id)
-        cls.prompt = (
-            "Suggest me a list of 5 gifts for a 30 years boy who is technology-fan."
-        )
+        cls.prompt = os.getenv("PROMPT")
 
     @staticmethod
     async def async_test(test_coro):

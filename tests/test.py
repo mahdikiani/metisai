@@ -8,10 +8,10 @@ from metisai import MetisBot
 class TestMetisBot(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(self.__class__, self).__init__(*args, **kwargs)
-        api_key = os.getenv("TAPSAGE_API_KEY")
-        bot_id = os.getenv("TAPSAGE_BOT_ID")
+        api_key = os.getenv("METIS_API_KEY")
+        bot_id = os.getenv("METIS_BOT_ID")
         self.metis_bot = MetisBot(api_key, bot_id)
-        self.prompt = "Suggest me a list of 5 gifts for a 30 years boy who is tech-fan."
+        self.prompt = os.getenv("PROMPT")
 
     def test_message(self):
         print()
