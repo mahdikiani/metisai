@@ -4,6 +4,7 @@ import uuid
 import requests
 
 from .metistypes import (
+    Attachment,
     Message,
     MessageContent,
     MessageRequest,
@@ -85,6 +86,32 @@ class MetisBot:
             message=MessageContent(
                 type="USER",
                 content=prompt,
+            )
+        )
+        response = requests.post(url, headers=self.headers, json=data.model_dump())
+        response.raise_for_status()
+        return Message(**response.json())
+
+    def send_message_with_attachment(
+        self,
+        session: Session,
+        prompt: str,
+        attachment_url: str,
+        attachment_type: str = "IMAGE",
+    ) -> Message:
+        if isinstance(session, (str, uuid.UUID)):
+            pass
+        else:
+            session.id
+
+        url = self.endpoints.get("message").format(session_id=session.id)
+        data = MessageRequest(
+            message=MessageContent(
+                type="USER",
+                content=prompt,
+                attachments=[
+                    Attachment(content=attachment_url, contentType=attachment_type)
+                ],
             )
         )
         response = requests.post(url, headers=self.headers, json=data.model_dump())

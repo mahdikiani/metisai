@@ -106,7 +106,13 @@ class AsyncMetisBot:
         )
         return Message(**response_data)
 
-    async def send_message_with_attachment(self, session: Session, prompt: str, attachment_url: str, attachment_type: str = "IMAGE") -> Message:
+    async def send_message_with_attachment(
+        self,
+        session: Session,
+        prompt: str,
+        attachment_url: str,
+        attachment_type: str = "IMAGE",
+    ) -> Message:
         if isinstance(session, (str, uuid.UUID)):
             session_id = session
         else:
