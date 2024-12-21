@@ -1,7 +1,7 @@
 import json
 import uuid
 
-import aiohttp
+import httpx
 
 from ..metistypes import (
     Attachment,
@@ -39,12 +39,10 @@ class AsyncMetisBot:
 
     async def _request(self, method: str, endpoint: str, **kwargs):
         url = self.endpoints.get(endpoint).format(**kwargs.pop("url_params", {}))
-        async with aiohttp.ClientSession() as session:
-            async with session.request(
-                method, url, headers=self.headers, **kwargs
-            ) as response:
-                response.raise_for_status()
-                return await response.json()
+        async with httpx.AsyncClient() as client:
+            response = await client.request(method, url, headers=self.headers, **kwargs)
+            response.raise_for_status()
+            return await response.json()
 
     async def create_session(self, user_id: str = None) -> Session:
         if user_id is None:
@@ -189,9 +187,9 @@ class AsyncMetisBot:
             )
         )
 
-        async with aiohttp.ClientSession() as _session:
-            async with _session.post(
-                url, headers=self.headers, json=data.model_dump()
+        async with httpx.AsyncClient() as client:
+            async with client.stream(
+                "POST", url, headers=self.headers, json=data.model_dump()
             ) as response:
                 response.raise_for_status()
                 buffer = ""
