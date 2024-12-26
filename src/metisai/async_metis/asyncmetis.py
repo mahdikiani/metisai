@@ -191,7 +191,7 @@ class AsyncMetisBot:
 
         async with httpx.AsyncClient() as client:
             async with client.stream(
-                "POST", url, headers=self.headers, json=data.model_dump()
+                "POST", url, headers=self.headers, json=data.model_dump(), timeout=None
             ) as response:
                 response.raise_for_status()
                 buffer = ""
