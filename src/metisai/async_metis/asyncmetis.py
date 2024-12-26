@@ -1,3 +1,4 @@
+import logging
 import json
 import uuid
 
@@ -16,6 +17,7 @@ from ..metistypes import (
     TaskResult,
 )
 
+logger = logging.getLogger("metis")
 
 class AsyncMetisBot:
     API_V1_SESSION = "https://api.metisai.ir/api/v1/chat/session"
