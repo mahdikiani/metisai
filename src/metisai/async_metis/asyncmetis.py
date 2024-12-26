@@ -194,42 +194,49 @@ class AsyncMetisBot:
                 response.raise_for_status()
                 buffer = ""
 
-                async for line in response.content:
-                    if line:
-                        data = line.decode("utf-8").strip("data:").strip()
-                        if not data:
-                            continue
-                        msg = MessageStream(**json.loads(data))
-                        if not split_criteria:
-                            yield msg
-                            continue
+                async for line in response.aiter_lines():
+                    line = line.strip("data:").strip()
+                    if not line:
+                        continue
 
-                        buffer += msg.message.content
-                        if split_criteria.get("min-length") and len(
-                            buffer
-                        ) >= split_criteria.get("min-length"):
-                            yield MessageStream(
-                                message=MessageContent(
-                                    type="AI", content=buffer, attachments=None
-                                )
+                    try:
+                        msg = MessageStream(**json.loads(line))
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logger.error(f"Failed to parse message: {line} - {e}")
+                        continue
+
+                    if not split_criteria:
+                        yield msg
+                        continue
+
+                    buffer += msg.message.content
+                    if split_criteria.get("min-length") and len(
+                        buffer
+                    ) >= split_criteria.get("min-length"):
+                        yield MessageStream(
+                            message=MessageContent(
+                                type="AI", content=buffer, attachments=None
                             )
-                            buffer = ""
+                        )
+                        buffer = ""
 
-                        if split_criteria.get("splitter"):
-                            for splitter in split_criteria.get("splitter"):
-                                if splitter in buffer:
-                                    yield MessageStream(
-                                        message=MessageContent(
-                                            type="AI",
-                                            content=buffer,
-                                            attachments=None,
-                                        )
+                    if split_criteria.get("splitter"):
+                        for splitter in split_criteria.get("splitter"):
+                            if splitter in buffer:
+                                yield MessageStream(
+                                    message=MessageContent(
+                                        type="AI",
+                                        content=buffer,
+                                        attachments=None,
                                     )
-                                    buffer = ""
-
-                yield MessageStream(
-                    message=MessageContent(type="AI", content=buffer, attachments=None)
-                )
+                                )
+                                buffer = ""
+                if buffer:
+                    yield MessageStream(
+                        message=MessageContent(
+                            type="AI", content=buffer, attachments=None
+                        )
+                    )
 
     async def close(self):
         if self._session is not None:
