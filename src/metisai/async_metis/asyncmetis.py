@@ -42,7 +42,7 @@ class AsyncMetisBot:
         async with httpx.AsyncClient() as client:
             response = await client.request(method, url, headers=self.headers, **kwargs)
             response.raise_for_status()
-            return await response.json()
+            return response.json()
 
     async def create_session(self, user_id: str = None) -> Session:
         if user_id is None:
