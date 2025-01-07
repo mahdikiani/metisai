@@ -1,10 +1,10 @@
-import logging
 import json
+import logging
 import uuid
 
 import httpx
 
-from ..metistypes import (
+from metisai.metistypes import (
     Attachment,
     Message,
     MessageContent,
@@ -19,72 +19,61 @@ from ..metistypes import (
 
 logger = logging.getLogger("metis")
 
-class AsyncMetisBot:
-    API_V1_SESSION = "https://api.metisai.ir/api/v1/chat/session"
 
-    def __init__(self, api_key, bot_id):
+class AsyncMetisBot(httpx.AsyncClient):
+    API_V1_SESSION = "https://api.metisai.ir/api/v1/chat/"
+
+    def __init__(self, api_key, bot_id=None):
         self.api_key = api_key
-        self.endpoints = {
-            "sessions": f"{self.API_V1_SESSION}s?userId={{user_id}}",
-            "session": f"{self.API_V1_SESSION}",
-            "get_session": f"{self.API_V1_SESSION}/{{session_id}}",
-            "message": f"{self.API_V1_SESSION}/{{session_id}}/message",
-            "async_task": f"{self.API_V1_SESSION}/{{session_id}}/message/async",
-            "get_async_task": f"{self.API_V1_SESSION}/{{session_id}}/message/async/{{task_id}}",
-            "stream": f"{self.API_V1_SESSION}/{{session_id}}/message/stream",
-        }
-        self.headers = {
-            "Content-Type": "application/json",
-            "X-Api-Key": self.api_key,
-        }
+        super().__init__(
+            base_url=self.API_V1_SESSION,
+            headers={"Content-Type": "application/json", "X-Api-Key": self.api_key},
+        )
         self.bot_id = bot_id
 
-    async def _request(self, method: str, endpoint: str, **kwargs):
-        url = self.endpoints.get(endpoint).format(**kwargs.pop("url_params", {}))
-        async with httpx.AsyncClient() as client:
-            response = await client.request(method, url, headers=self.headers, **kwargs)
-            response.raise_for_status()
-            return response.json()
+    async def create_session(
+        self, user_id: str | None = None, bot_id: str | None = None
+    ) -> Session:
+        if bot_id is None:
+            bot_id = self.bot_id
+        assert bot_id is not None
 
-    async def create_session(self, user_id: str = None) -> Session:
         if user_id is None:
             user_id = str(uuid.uuid4())
 
         session_request = SessionRequest(
-            botId=self.bot_id, user=SessionUser(id=user_id, name="_")
+            botId=bot_id, user=SessionUser(id=user_id, name="_")
         )
 
-        response_data = await self._request(
-            method="POST",
-            endpoint="session",
-            json=session_request.model_dump(),
-        )
-        return Session(**response_data)
+        response = await self.post(url="session", json=session_request.model_dump())
+        response.raise_for_status()
+        return Session(**response.json())
 
-    async def list_sessions(self, user_id: str) -> list[Session]:
-        response_data = await self._request(
-            method="GET", endpoint="sessions", url_params={"user_id": user_id}
-        )
-        return [Session(**data) for data in response_data]
+    async def list_sessions(
+        self, user_id: str, bot_id: str | None = None
+    ) -> list[Session]:
+        if bot_id is None:
+            bot_id = self.bot_id
+
+        response = await self.get("sessions", timeout=None, params={"userId": user_id})
+        return [
+            Session(**data)
+            for data in response.json()
+            if not bot_id or data.get("botId") == bot_id
+        ]
 
     async def retrieve_session(self, session_id: str) -> Session:
-        response_data = await self._request(
-            method="GET",
-            endpoint="get_session",
-            url_params={"session_id": session_id},
-        )
-        return Session(**response_data)
+        response = await self.get(f"session/{session_id}", timeout=None)
+        response.raise_for_status()
+        return Session(**response.json())
 
     async def delete_session(self, session: Session) -> None:
         if isinstance(session, (str, uuid.UUID)):
             session_id = session
         else:
             session_id = session.id
-        await self._request(
-            method="DELETE",
-            endpoint="get_session",
-            url_params={"session_id": session_id},
-        )
+        response = await self.delete(f"session/{session_id}", timeout=None)
+        response.raise_for_status()
 
     async def send_message(self, session: Session, prompt: str) -> Message:
         if isinstance(session, (str, uuid.UUID)):
@@ -98,13 +87,11 @@ class AsyncMetisBot:
                 content=prompt,
             )
         )
-        response_data = await self._request(
-            method="POST",
-            endpoint="message",
-            url_params={"session_id": session_id},
-            json=data.model_dump(),
+        response = await self.post(
+            f"session/{session_id}/message", json=data.model_dump(), timeout=None
         )
-        return Message(**response_data)
+        response.raise_for_status()
+        return Message(**response.json())
 
     async def send_message_with_attachment(
         self,
@@ -127,13 +114,11 @@ class AsyncMetisBot:
                 ],
             )
         )
-        response_data = await self._request(
-            method="POST",
-            endpoint="message",
-            url_params={"session_id": session_id},
-            json=data.model_dump(),
+        response = await self.post(
+            f"session/{session_id}/message", json=data.model_dump(), timeout=None
         )
-        return Message(**response_data)
+        response.raise_for_status()
+        return Message(**response.json())
 
     async def send_message_async(self, session: Session, prompt: str) -> Task:
         if isinstance(session, (str, uuid.UUID)):
@@ -147,13 +132,11 @@ class AsyncMetisBot:
                 content=prompt,
             )
         )
-        response_data = await self._request(
-            method="POST",
-            endpoint="async_task",
-            url_params={"session_id": session_id},
-            json=data.model_dump(),
+        response = await self.post(
+            f"session/{session_id}/message/async", json=data.model_dump(), timeout=None
         )
-        return Task(**response_data)
+        response.raise_for_status()
+        return Task(**response.json())
 
     async def retrieve_async_task(self, session: Session, task: Task) -> TaskResult:
         if isinstance(session, (str, uuid.UUID)):
@@ -166,12 +149,11 @@ class AsyncMetisBot:
         else:
             task_id = task.taskId
 
-        response_data = await self._request(
-            method="GET",
-            endpoint="get_async_task",
-            url_params={"session_id": session_id, "task_id": task_id},
+        response = await self.get(
+            f"session/{session_id}/message/async/{task_id}", timeout=None
         )
-        return TaskResult(**response_data)
+        response.raise_for_status()
+        return TaskResult(**response.json())
 
     async def stream_messages(
         self, session: Session, prompt: str, split_criteria: dict = None
@@ -181,7 +163,6 @@ class AsyncMetisBot:
         else:
             session_id = session.id
 
-        url = self.endpoints.get("stream").format(session_id=session_id)
         data = MessageRequest(
             message=MessageContent(
                 type="USER",
@@ -189,58 +170,53 @@ class AsyncMetisBot:
             )
         )
 
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                "POST", url, headers=self.headers, json=data.model_dump(), timeout=None
-            ) as response:
-                response.raise_for_status()
-                buffer = ""
+        async with self.stream(
+            "POST",
+            f"session/{session_id}/message/stream",
+            json=data.model_dump(),
+            timeout=None,
+        ) as response:
+            response.raise_for_status()
+            buffer = ""
 
-                async for line in response.aiter_lines():
-                    line = line.strip("data:").strip()
-                    if not line:
-                        continue
+            async for line in response.aiter_lines():
+                line = line.strip("data:").strip()
+                if not line:
+                    continue
 
-                    try:
-                        msg = MessageStream(**json.loads(line))
-                    except (json.JSONDecodeError, ValueError) as e:
-                        logger.error(f"Failed to parse message: {line} - {e}")
-                        continue
+                try:
+                    msg = MessageStream(**json.loads(line))
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.error(f"Failed to parse message: {line} - {e}")
+                    continue
 
-                    if not split_criteria:
-                        yield msg
-                        continue
+                if not split_criteria:
+                    yield msg
+                    continue
 
-                    buffer += msg.message.content
-                    if split_criteria.get("min-length") and len(
-                        buffer
-                    ) >= split_criteria.get("min-length"):
-                        yield MessageStream(
-                            message=MessageContent(
-                                type="AI", content=buffer, attachments=None
-                            )
-                        )
-                        buffer = ""
-
-                    if split_criteria.get("splitter"):
-                        for splitter in split_criteria.get("splitter"):
-                            if splitter in buffer:
-                                yield MessageStream(
-                                    message=MessageContent(
-                                        type="AI",
-                                        content=buffer,
-                                        attachments=None,
-                                    )
-                                )
-                                buffer = ""
-                if buffer:
+                buffer += msg.message.content
+                if split_criteria.get("min-length") and len(
+                    buffer
+                ) >= split_criteria.get("min-length"):
                     yield MessageStream(
                         message=MessageContent(
                             type="AI", content=buffer, attachments=None
                         )
                     )
+                    buffer = ""
 
-    async def close(self):
-        if self._session is not None:
-            await self._session.close()
-            self._session = None
+                if split_criteria.get("splitter"):
+                    for splitter in split_criteria.get("splitter"):
+                        if splitter in buffer:
+                            yield MessageStream(
+                                message=MessageContent(
+                                    type="AI",
+                                    content=buffer,
+                                    attachments=None,
+                                )
+                            )
+                            buffer = ""
+            if buffer:
+                yield MessageStream(
+                    message=MessageContent(type="AI", content=buffer, attachments=None)
+                )

@@ -13,3 +13,5 @@ venv/
 .nox
 .cache
 .env
+
+.coverage

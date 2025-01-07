@@ -1,68 +1,59 @@
 import asyncio
-import os
-import unittest
+
+import pytest
 
 from metisai.async_metis import AsyncMetisBot
 
 
-class TestAsyncTapSageBot(unittest.IsolatedAsyncioTestCase):
-    @classmethod
-    def setUpClass(cls):
-        api_key = os.getenv("METIS_API_KEY")
-        bot_id = os.getenv("METIS_BOT_ID")
-        cls.metis_bot = AsyncMetisBot(api_key, bot_id)
-        cls.prompt = os.getenv("PROMPT")
-
-    @staticmethod
-    async def async_test(test_coro):
-        loop = asyncio.get_event_loop()
-        return await loop.run_until_complete(test_coro)
-
-    async def test_create_session(self):
-        print("test_create_session")
-        session = await self.metis_bot.create_session()
-        self.assertIsNotNone(session.id)
-        print(session)
-        await self.metis_bot.delete_session(session)
-
-    async def test_send_message(self):
-        print("test_send_message")
-        session = await self.metis_bot.create_session()
-        message = await self.metis_bot.send_message(session, self.prompt)
-        self.assertIsInstance(message.content, str)
-        print(message.content)
-        await self.metis_bot.delete_session(session)
-
-    async def test_send_message_async(self):
-        print("test_send_message_async")
-        session = await self.metis_bot.create_session()
-        task = await self.metis_bot.send_message_async(session, self.prompt)
-
-        while True:
-            task_result = await self.metis_bot.retrieve_async_task(session, task)
-            if task_result.status == "FINISHED":
-                break
-            await asyncio.sleep(1)
-        self.assertIsInstance(task_result.message.content, str)
-        print(task_result.message.content)
-        await self.metis_bot.delete_session(session)
-
-    async def test_stream_messages(self):
-        print("test_stream_messages")
-        session = await self.metis_bot.create_session()
-        async for message in self.metis_bot.stream_messages(
-            session, self.prompt, split_criteria={"line": True}
-        ):
-            print(message.message.content)
-        await self.metis_bot.delete_session(session)
-
-    def test_all_async(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.test_create_session())
-        loop.run_until_complete(self.test_send_message())
-        loop.run_until_complete(self.test_send_message_async())
-        loop.run_until_complete(self.test_stream_messages())
+@pytest.mark.asyncio
+async def test_message(async_metis_bot: AsyncMetisBot, prompt: str):
+    session = await async_metis_bot.create_session()
+    assert session is not None
+    message = await async_metis_bot.send_message(session, prompt)
+    assert message is not None
+    assert message.content is not None
+    await async_metis_bot.delete_session(session)
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.asyncio
+async def test_session(async_metis_bot: AsyncMetisBot, prompt: str):
+    session = await async_metis_bot.create_session()
+    assert session is not None
+    message = await async_metis_bot.send_message(session, prompt)
+    assert message is not None
+    assert message.content is not None
+    prompt2 = "What if he is a book lover?"
+    message2 = await async_metis_bot.send_message(session, prompt2)
+    assert message2 is not None
+    assert message2.content is not None
+    await async_metis_bot.delete_session(session)
+
+
+@pytest.mark.asyncio
+async def test_async_tasks(async_metis_bot: AsyncMetisBot, prompt: str):
+    session = await async_metis_bot.create_session()
+    assert session is not None
+    task = await async_metis_bot.send_message_async(session, prompt)
+    assert task is not None
+    while True:
+        task_result = await async_metis_bot.retrieve_async_task(session, task)
+        if task_result.status == "FINISHED":
+            break
+        await asyncio.sleep(1)
+    assert task_result.status == "FINISHED"
+    assert task_result.message.content is not None
+    await async_metis_bot.delete_session(session)
+
+
+@pytest.mark.asyncio
+async def test_stream_messages(async_metis_bot: AsyncMetisBot, prompt: str):
+    session = await async_metis_bot.create_session()
+    assert session is not None
+    stream = async_metis_bot.stream_messages(
+        session, prompt, split_criteria={"line": True}
+    )
+    async for message in stream:
+        assert message is not None
+        assert message.message is not None
+        assert message.message.content is not None
+    await async_metis_bot.delete_session(session)

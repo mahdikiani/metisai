@@ -1,9 +1,9 @@
 import json
 import uuid
 
-import requests
+import httpx
 
-from .metistypes import (
+from metisai.metistypes import (
     Attachment,
     Message,
     MessageContent,
@@ -17,19 +17,21 @@ from .metistypes import (
 )
 
 
-class MetisBot:
-    API_V1_SESSION = "https://api.metisai.ir/api/v1/chat/session"
+class MetisBot(httpx.Client):
+    API_V1_SESSION = "https://api.metisai.ir/api/v1/chat"
 
-    def __init__(self, api_key, bot_id):
+    def __init__(self, api_key, bot_id: str | None = None):
+        super().__init__()
         self.api_key = api_key
+        self.base_url = self.API_V1_SESSION
         self.endpoints = {
-            "sessions": f"{self.API_V1_SESSION}s?userId={{user_id}}",
-            "session": f"{self.API_V1_SESSION}",
-            "get_session": f"{self.API_V1_SESSION}/{{session_id}}",
-            "message": f"{self.API_V1_SESSION}/{{session_id}}/message",
-            "async_task": f"{self.API_V1_SESSION}/{{session_id}}/message/async",
-            "get_async_task": f"{self.API_V1_SESSION}/{{session_id}}/message/async/{{task_id}}",
-            "stream": f"{self.API_V1_SESSION}/{{session_id}}/message/stream",
+            "sessions": f"{self.API_V1_SESSION}/sessions",
+            "session": f"{self.API_V1_SESSION}/session",
+            "get_session": f"{self.API_V1_SESSION}/session/{{session_id}}",
+            "message": f"{self.API_V1_SESSION}/session/{{session_id}}/message",
+            "async_task": f"{self.API_V1_SESSION}/session/{{session_id}}/message/async",
+            "get_async_task": f"{self.API_V1_SESSION}/session/{{session_id}}/message/async/{{task_id}}",
+            "stream": f"{self.API_V1_SESSION}/session/{{session_id}}/message/stream",
         }
         self.headers = {
             "Content-Type": "application/json",
@@ -37,31 +39,38 @@ class MetisBot:
         }
         self.bot_id = bot_id
 
-    def create_session(self, user_id: str = None) -> Session:
+    def create_session(
+        self, user_id: str | None = None, bot_id: str | None = None
+    ) -> Session:
+        if bot_id is None:
+            bot_id = self.bot_id
+        assert bot_id is not None
+
         if user_id is None:
             user_id = str(uuid.uuid4())
 
         session_request = SessionRequest(
-            botId=self.bot_id, user=SessionUser(id=user_id, name="_")
+            botId=bot_id, user=SessionUser(id=user_id, name="_")
         )
 
-        response = requests.post(
-            url=self.endpoints.get("session"),
-            headers=self.headers,
-            json=session_request.model_dump(),
-        )
+        response = self.post(url="session", json=session_request.model_dump())
         response.raise_for_status()
         return Session(**response.json())
 
-    def list_sessions(self, user_id: str) -> list[Session]:
-        url = self.endpoints.get("sessions").format(user_id=user_id)
-        response = requests.get(url, headers=self.headers)
+    def list_sessions(self, user_id: str, bot_id: str | None = None) -> list[Session]:
+        if bot_id is None:
+            bot_id = self.bot_id
+
+        response = self.get("sessions", timeout=None, params={"userId": user_id})
         response.raise_for_status()
-        return [Session(**data) for data in response.json()]
+        return [
+            Session(**data)
+            for data in response.json()
+            if not bot_id or data.get("botId") == bot_id
+        ]
 
     def retrieve_session(self, session_id: str) -> Session:
-        url = self.endpoints.get("get_session").format(session_id=session_id)
-        response = requests.get(url, headers=self.headers)
+        response = self.get(f"session/{session_id}", timeout=None)
         response.raise_for_status()
         return Session(**response.json())
 
@@ -71,40 +80,39 @@ class MetisBot:
         else:
             session_id = session.id
 
-        url = self.endpoints.get("get_session").format(session_id=session_id)
-        response = requests.delete(url, headers=self.headers)
+        response = self.delete(f"session/{session_id}", timeout=None)
         response.raise_for_status()
 
-    def send_message(self, session: Session, prompt: str) -> Message:
+    def send_message(self, session: Session | str | uuid.UUID, prompt: str) -> Message:
         if isinstance(session, (str, uuid.UUID)):
-            pass
+            session_id = session
         else:
-            session.id
+            session_id = session.id
 
-        url = self.endpoints.get("message").format(session_id=session.id)
         data = MessageRequest(
             message=MessageContent(
                 type="USER",
                 content=prompt,
             )
         )
-        response = requests.post(url, headers=self.headers, json=data.model_dump())
+        response = self.post(
+            f"session/{session_id}/message", json=data.model_dump(), timeout=None
+        )
         response.raise_for_status()
         return Message(**response.json())
 
     def send_message_with_attachment(
         self,
-        session: Session,
+        session: Session | str | uuid.UUID,
         prompt: str,
         attachment_url: str,
         attachment_type: str = "IMAGE",
     ) -> Message:
         if isinstance(session, (str, uuid.UUID)):
-            pass
+            session_id = session
         else:
-            session.id
+            session_id = session.id
 
-        url = self.endpoints.get("message").format(session_id=session.id)
         data = MessageRequest(
             message=MessageContent(
                 type="USER",
@@ -114,7 +122,9 @@ class MetisBot:
                 ],
             )
         )
-        response = requests.post(url, headers=self.headers, json=data.model_dump())
+        response = self.post(
+            f"session/{session_id}/message", json=data.model_dump(), timeout=None
+        )
         response.raise_for_status()
         return Message(**response.json())
 
@@ -124,14 +134,15 @@ class MetisBot:
         else:
             session_id = session.id
 
-        url = self.endpoints.get("async_task").format(session_id=session_id)
         data = MessageRequest(
             message=MessageContent(
                 type="USER",
                 content=prompt,
             )
         )
-        response = requests.post(url, headers=self.headers, json=data.model_dump())
+        response = self.post(
+            f"session/{session_id}/message/async", json=data.model_dump(), timeout=None
+        )
         response.raise_for_status()
         return Task(**response.json())
 
@@ -146,10 +157,9 @@ class MetisBot:
         else:
             task_id = task.taskId
 
-        url = self.endpoints.get("get_async_task").format(
-            session_id=session_id, task_id=task_id
+        response = self.get(
+            f"session/{session_id}/message/async/{task_id}", timeout=None
         )
-        response = requests.get(url, headers=self.headers)
         response.raise_for_status()
         return TaskResult(**response.json())
 
@@ -159,49 +169,41 @@ class MetisBot:
         if isinstance(session, (str, uuid.UUID)):
             session_id = session
         else:
-            session_id = session_id
+            session_id = session.id
 
-        url = self.endpoints.get("stream").format(session_id=session_id)
         data = MessageRequest(
             message=MessageContent(
                 type="USER",
                 content=prompt,
             )
         )
-        response = requests.post(
-            url, headers=self.headers, json=data.model_dump(), stream=True
-        )
-        response.raise_for_status()
+        with self.stream(
+            "POST",
+            f"session/{session_id}/message/stream",
+            json=data.model_dump(),
+            timeout=None,  # stream=True
+        ) as response:
+            # response.raise_for_status()
 
-        if split_criteria.get("words"):
-            split_criteria["splitter"] = " "
-        elif split_criteria.get("sentence"):
-            split_criteria["splitter"] = ".?!:"
-        elif split_criteria.get("line"):
-            split_criteria["splitter"] = "\n"
+            if split_criteria.get("words"):
+                split_criteria["splitter"] = " "
+            elif split_criteria.get("sentence"):
+                split_criteria["splitter"] = ".?!:"
+            elif split_criteria.get("line"):
+                split_criteria["splitter"] = "\n"
 
-        buffer = ""
-        for line in response.iter_lines():
-            if line:
-                data = line.decode("utf-8").replace("data:", "")
-                msg = MessageStream(**json.loads(data))
-                if not split_criteria:
-                    yield MessageStream(**json.loads(data))
-                    continue
+            buffer = ""
+            for line in response.iter_lines():
+                if line:
+                    data = line.replace("data:", "")
+                    msg = MessageStream(**json.loads(data))
+                    if not split_criteria:
+                        yield MessageStream(**json.loads(data))
+                        continue
 
-                buffer += msg.message.content
-                if split_criteria.get("min-length"):
-                    if len(buffer) >= split_criteria.get("min-length"):
-                        yield MessageStream(
-                            message=MessageContent(
-                                type="AI", content=buffer, attachments=None
-                            )
-                        )
-                        buffer = ""
-
-                if split_criteria.get("splitter"):
-                    for splitter in split_criteria.get("splitter"):
-                        if splitter in buffer:
+                    buffer += msg.message.content
+                    if split_criteria.get("min-length"):
+                        if len(buffer) >= split_criteria.get("min-length"):
                             yield MessageStream(
                                 message=MessageContent(
                                     type="AI", content=buffer, attachments=None
@@ -209,6 +211,16 @@ class MetisBot:
                             )
                             buffer = ""
 
-        yield MessageStream(
-            message=MessageContent(type="AI", content=buffer, attachments=None)
-        )
+                    if split_criteria.get("splitter"):
+                        for splitter in split_criteria.get("splitter"):
+                            if splitter in buffer:
+                                yield MessageStream(
+                                    message=MessageContent(
+                                        type="AI", content=buffer, attachments=None
+                                    )
+                                )
+                                buffer = ""
+
+            yield MessageStream(
+                message=MessageContent(type="AI", content=buffer, attachments=None)
+            )
