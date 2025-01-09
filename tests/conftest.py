@@ -1,14 +1,8 @@
-import logging
 import os
 
-import dotenv
 import pytest
 
 from metisai import AsyncMetisBot, MetisBot
-
-dotenv.load_dotenv()
-
-logging.basicConfig(level=logging.INFO, filename="./test.log", encoding="utf-8")
 
 
 @pytest.fixture
