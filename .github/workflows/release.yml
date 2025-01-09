@@ -28,14 +28,13 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pytest pytest-asyncio pytest-cov
         python -m pip install -e .[test]
-    - name: Test
+    - name: Run tests
       env:
         METIS_API_KEY: ${{ secrets.METIS_API_KEY }}
         METIS_BOT_ID: ${{ secrets.METIS_BOT_ID }}
         PROMPT: ${{ vars.PROMPT }}
-      run: python -m nox -s tests-${{ matrix.python }}
-    - name: Lint
-      run: python -m nox -s lint
+      run: |
+        pytest tests/ --cov=src --cov-report=xml --cov-report=html --cov-fail-under=80
     - name: Upload coverage
       uses: codecov/codecov-action@v3
       with:
