@@ -1,8 +1,11 @@
 import os
 
+import dotenv
 import pytest
 
 from metisai import AsyncMetisBot, MetisBot
+
+dotenv.load_dotenv()
 
 
 @pytest.fixture
