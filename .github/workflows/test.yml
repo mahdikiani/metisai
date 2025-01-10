@@ -14,6 +14,10 @@ jobs:
     runs-on: ${{ matrix.platform }}
     environment:
       name: mahdi env
+    env:
+      METIS_API_KEY: ${{ secrets.METIS_API_KEY }}
+      METIS_BOT_ID: ${{ secrets.METIS_BOT_ID }}
+      PROMPT: ${{ vars.PROMPT }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
