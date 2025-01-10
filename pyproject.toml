@@ -57,7 +57,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["check-manifest"]
-test = ["coverage"]
+test = ["coverage", "pytest", "pytest-cov", "python-dotenv"]
 
 [project.urls]
 "Homepage" = "https://github.com/mahdikiani/metisai"
