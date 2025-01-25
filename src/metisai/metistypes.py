@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import Any, Literal
 
@@ -98,13 +99,27 @@ class MessageRequest(BaseModel):
     message: MessageContent
 
 
+class Billing(BaseModel):
+    cost: float
+
+
 class Message(BaseModel):
-    id: str
+    id: uuid.UUID
     type: Literal["USER", "AI"]
     content: str | None = None
+    input: str | None = None
+    actions: list | None = None
     attachments: list[Attachment] | None = None
     timestamp: datetime
     finishReason: Literal["STOP", "LENGTH", "CONTENT_FILTER"] | None
+    citations: list | None = None
+    toolCalls: list | None = None
+    rag: dict | None = None
+    billing: Billing | None = None
+
+    @property
+    def cost(self) -> float:
+        return self.billing.cost if self.billing else 0.0
 
 
 class MessageStream(BaseModel):
@@ -138,3 +153,7 @@ class Session(BaseModel):
     user: SessionUser
     messages: list[Message]
     startDate: datetime
+
+    @property
+    def cost(self) -> float:
+        return sum(message.cost for message in self.messages)

@@ -21,22 +21,10 @@ class MetisBot(httpx.Client):
     API_V1_SESSION = "https://api.metisai.ir/api/v1/chat"
 
     def __init__(self, api_key, bot_id: str | None = None):
-        super().__init__()
-        self.api_key = api_key
-        self.base_url = self.API_V1_SESSION
-        self.endpoints = {
-            "sessions": f"{self.API_V1_SESSION}/sessions",
-            "session": f"{self.API_V1_SESSION}/session",
-            "get_session": f"{self.API_V1_SESSION}/session/{{session_id}}",
-            "message": f"{self.API_V1_SESSION}/session/{{session_id}}/message",
-            "async_task": f"{self.API_V1_SESSION}/session/{{session_id}}/message/async",
-            "get_async_task": f"{self.API_V1_SESSION}/session/{{session_id}}/message/async/{{task_id}}",
-            "stream": f"{self.API_V1_SESSION}/session/{{session_id}}/message/stream",
-        }
-        self.headers = {
-            "Content-Type": "application/json",
-            "X-Api-Key": self.api_key,
-        }
+        super().__init__(
+            base_url=self.API_V1_SESSION,
+            headers={"Content-Type": "application/json", "X-Api-Key": api_key},
+        )
         self.bot_id = bot_id
 
     def create_session(
