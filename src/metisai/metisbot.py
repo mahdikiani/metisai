@@ -36,6 +36,8 @@ class MetisBot(httpx.Client):
 
         if user_id is None:
             user_id = str(uuid.uuid4())
+        else:
+            user_id = str(user_id)
 
         session_request = SessionRequest(
             botId=bot_id, user=SessionUser(id=user_id, name="_")
