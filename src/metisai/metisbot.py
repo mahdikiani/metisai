@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 
 import httpx
@@ -18,12 +19,26 @@ from metisai.metistypes import (
 
 
 class MetisBot(httpx.Client):
-    API_V1_SESSION = "https://api.metisai.ir/api/v1/chat"
 
-    def __init__(self, api_key, bot_id: str | None = None):
+    def __init__(
+        self,
+        api_key=None,
+        bot_id=None,
+        *,
+        base_url: str = "https://api.metisai.ir/api/v1/chat/",
+        **kwargs,
+    ):
+        if api_key is None:
+            api_key = os.getenv("METIS_API_KEY")
+
+        if api_key is None:
+            raise ValueError("api_key is required")
+
+        self.api_key = api_key
         super().__init__(
-            base_url=self.API_V1_SESSION,
-            headers={"Content-Type": "application/json", "X-Api-Key": api_key},
+            base_url=base_url,
+            headers={"Content-Type": "application/json", "X-Api-Key": self.api_key},
+            **kwargs,
         )
         self.bot_id = bot_id
 

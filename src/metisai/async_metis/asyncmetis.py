@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import uuid
 
 import httpx
@@ -21,13 +22,25 @@ logger = logging.getLogger("metis")
 
 
 class AsyncMetisBot(httpx.AsyncClient):
-    API_V1_SESSION = "https://api.metisai.ir/api/v1/chat/"
+    def __init__(
+        self,
+        api_key=None,
+        bot_id=None,
+        *,
+        base_url: str = "https://api.metisai.ir/api/v1/chat/",
+        **kwargs,
+    ):
+        if api_key is None:
+            api_key = os.getenv("METIS_API_KEY")
 
-    def __init__(self, api_key, bot_id=None):
+        if api_key is None:
+            raise ValueError("api_key is required")
+
         self.api_key = api_key
         super().__init__(
-            base_url=self.API_V1_SESSION,
+            base_url=base_url,
             headers={"Content-Type": "application/json", "X-Api-Key": self.api_key},
+            **kwargs,
         )
         self.bot_id = bot_id
 
