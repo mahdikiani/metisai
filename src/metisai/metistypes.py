@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -27,7 +27,7 @@ class Provider(BaseModel):
 
 class ProviderConfig(BaseModel):
     provider: Provider
-    args: dict[str, Any]
+    args: dict[str, object]
 
 
 class ChatProvider(BaseModel):
@@ -41,7 +41,7 @@ class ChatProvider(BaseModel):
 
 class Summarizer(BaseModel):
     provider: Provider
-    args: dict[str, Any]
+    args: dict[str, object]
 
 
 class BotRequest(BaseModel):
